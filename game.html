@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Run and Jump Game</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #87CEEB;
+        }
+
+        canvas {
+            display: block;
+            margin: 0 auto;
+            background-color: #87CEEB;
+        }
+
+        #score, #game-over {
+            position: absolute;
+            font-size: 24px;
+            color: white;
+        }
+
+        #score {
+            top: 20px;
+            left: 20px;
+        }
+
+        #game-over {
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 36px;
+            display: none;
+        }
+
+        #restart {
+            font-size: 24px;
+            color: white;
+            text-decoration: underline;
+            cursor: pointer;
+            position: absolute;
+            top: 60%;
+            left: 50%;
+            transform: translateX(-50%);
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+<canvas id="gameCanvas"></canvas>
+<div id="score">Score: 0</div>
+<div id="game-over">Game Over</div>
+<div id="restart" onclick="restartGame()">Restart</div>
+
+<script>
+    // Set up the game canvas
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    // Game Variables
+    let score = 0;
+    let gravity = 0.8;
+    let friction = 0.99;
+    let isJumping = false;
+    let jumpPower = 15;
+    let gameSpeed = 5;
+
+    // Sounds
+    const jumpSound = new Audio('https://www.soundjay.com/button/beep-07.wav'); // Replace with your own sound
+    const gameOverSound = new Audio('https://www.soundjay.com/button/button-16.wav'); // Replace with your own sound
+
+    // Player variables
+    const player = {
+        width: 50,
+        height: 50,
+        x: 100,
+        y: canvas.height - 100,
+        speedX: 0,
+        speedY: 0,
+        color: '#FF6347',
+        jumping: false,
+        grounded: true,
+    };
+
+    // Ground variables
+    const ground = {
+        y: canvas.height - 50,
+        width: canvas.width,
+        height: 50,
+        color: '#2E8B57'
+    };
+
+    // Obstacles array
+    const obstacles = [];
+
+    // Controls
+    document.addEventListener('keydown', (e) => {
+        if (e.code === 'Space' && !player.jumping && player.grounded) {
+            player.jumping = true;
+            player.speedY = -jumpPower;
+            jumpSound.play();
+        }
+    });
+
+    // Game loop
+    function gameLoop() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // Update Player
+        player.speedY += gravity;
+        player.y += player.speedY;
+        if (player.y > ground.y - player.height) {
+            player.y = ground.y - player.height;
+            player.speedY = 0;
+            player.jumping = false;
+            player.grounded = true;
+        } else {
+            player.grounded = false;
+        }
+
+        // Draw player
+        ctx.fillStyle = player.color;
+        ctx.fillRect(player.x, player.y, player.width, player.height);
+
+        // Update and draw obstacles
+        for (let i = 0; i < obstacles.length; i++) {
+            const obstacle = obstacles[i];
+            obstacle.x -= gameSpeed;
+            ctx.fillStyle = '#000000';
+            ctx.fillRect(obstacle.x, obstacle.y, obstacle.width, obstacle.height);
+
+            if (obstacle.x + obstacle.width < 0) {
+                obstacles.splice(i, 1);
+                score++;
+            }
+
+            // Collision detection
+            if (player.x < obstacle.x + obstacle.width &&
+                player.x + player.width > obstacle.x &&
+                player.y < obstacle.y + obstacle.height &&
+                player.y + player.height > obstacle.y) {
+                gameOver();
+            }
+        }
+
+        // Score display
+        document.getElementById('score').textContent = `Score: ${score}`;
+
+        // Add new obstacles
+        if (Math.random() < 0.02) {
+            const height = Math.random() * (canvas.height / 2) + 20;
+            obstacles.push({
+                x: canvas.width,
+                y: ground.y - height,
+                width: 50,
+                height: height
+            });
+        }
+
+        // Call gameLoop again for the next frame
+        requestAnimationFrame(gameLoop);
+    }
+
+    // Handle Game Over
+    function gameOver() {
+        gameOverSound.play();
+        document.getElementById('game-over').style.display = 'block';
+        document.getElementById('restart').style.display = 'block';
+    }
+
+    // Restart the game
+    function restartGame() {
+        score = 0;
+        obstacles.length = 0;
+        player.x = 100;
+        player.y = canvas.height - 100;
+        player.speedY = 0;
+        player.jumping = false;
+        player.grounded = true;
+        document.getElementById('game-over').style.display = 'none';
+        document.getElementById('restart').style.display = 'none';
+        gameLoop();
+    }
+
+    // Start the game loop
+    gameLoop();
+</script>
+
+</body>
+</html>
